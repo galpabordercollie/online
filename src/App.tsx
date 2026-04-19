@@ -38,6 +38,7 @@ interface AlumnoData {
   success: boolean;
   user: string;
   classes: ClassItem[];
+  students?: any[]; // Added for teacher role
   message?: string;
 }
 
@@ -130,6 +131,15 @@ const formatDate = (dateString: string) => {
   }
 };
 
+const getYoutubeId = (url: string) => {
+  if (!url) return "";
+  let id = url;
+  if (id.includes("v=")) id = id.split("v=")[1].split("&")[0];
+  if (id.includes("youtu.be/")) id = id.split("youtu.be/")[1].split("?")[0];
+  if (id.includes("embed/")) id = id.split("embed/")[1].split("?")[0];
+  return id;
+};
+
 // --- Components ---
 
 export default function App() {
@@ -156,9 +166,11 @@ export default function App() {
     }
   }, []);
 
-  const handleLoginSuccess = (data: AlumnoData) => {
-    setUser(data);
-    sessionStorage.setItem("alumnoData", JSON.stringify(data));
+  const handleLoginSuccess = (data: AlumnoData, password?: string) => {
+    // Inject password for session refreshes
+    const sessionData = { ...data, _auth: password };
+    setUser(sessionData);
+    sessionStorage.setItem("alumnoData", JSON.stringify(sessionData));
     const isTeacher = data.user?.toUpperCase().includes("GALPA");
     if (isTeacher) {
       setView("teacher");
@@ -324,7 +336,7 @@ export default function App() {
       {/* Footer */}
       <footer className="px-12 py-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] uppercase tracking-[0.3em] font-medium text-brand-ink/30">
         <div className="flex gap-8">
-          <span>GALPA © 2026 <span className="ml-2 font-mono text-white/50">v0.2.0</span></span>
+          <span>GALPA © 2026 <span className="ml-2 font-mono text-white/50">v0.2.5</span></span>
           <span className="text-white/5 hidden md:block">|</span>
           <span>Sheepdog Specialization Campus</span>
         </div>
@@ -561,7 +573,7 @@ function ServiceDetailView({ service, onBack }: { service: ServiceInfo; onBack: 
 
 // --- View: Login ---
 
-function LoginView({ onSuccess, onBack }: { onSuccess: (data: AlumnoData) => void; onBack: () => void }) {
+function LoginView({ onSuccess, onBack }: { onSuccess: (data: AlumnoData, pass?: string) => void; onBack: () => void }) {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [loading, setLoading] = useState(false);
@@ -573,12 +585,12 @@ function LoginView({ onSuccess, onBack }: { onSuccess: (data: AlumnoData) => voi
     setError("");
 
     // Créditos de profesor directos
-    if (user === "GALPA" && pass === "@Joker2026") {
+    if (user.trim().toUpperCase() === "GALPA" && pass === "@Joker2026") {
       onSuccess({
         success: true,
-        user: "INST. GALPA",
+        user: user.trim(),
         classes: []
-      });
+      }, pass);
       setLoading(false);
       return;
     }
@@ -594,7 +606,7 @@ function LoginView({ onSuccess, onBack }: { onSuccess: (data: AlumnoData) => voi
       const data = await response.json();
 
       if (data.success) {
-        onSuccess(data);
+        onSuccess(data, pass);
       } else {
         setError(data.message || "Usuario o contraseña incorrectos");
       }
@@ -699,26 +711,20 @@ function TeacherDashboard({ onLogout }: { onLogout: () => void }) {
     
     const parsed = JSON.parse(savedData);
     const userParam = parsed.user;
-    // Si el usuario es GALPA, asumimos que ya pasó la validación.
-    // Para re-refrescar necesitamos el pass, intentamos usar el guardado si existiera.
-    // Pero lo mejor es inicializar 'allStudents' con lo que ya viene en 'parsed.students'
+    const passParam = parsed._auth || "@Joker2026";
     
     try {
-      // Intentamos refrescar si hay credenciales (esto requiere cuidado con seguridad)
-      // Como solución temporal, si no hay pass, usamos los datos cacheados
-      if (parsed.students && !loading) {
-         setAllStudents(parsed.students);
-      }
-      
-      // Si el profesor quiere un refresco real, necesitaría el pass. 
-      // Por ahora, priorizamos que se VEA lo que ya se descargó en el login.
-      const response = await fetch(`${LOGIN_SCRIPT_URL}?action=getAllData&user=${encodeURIComponent(userParam)}&pass=@Joker2026`);
+      const response = await fetch(`${LOGIN_SCRIPT_URL}?action=getAllData&user=${encodeURIComponent(userParam)}&pass=${encodeURIComponent(passParam)}`);
       const data = await response.json();
+      
       if (data.success) {
         setAllStudents(data.students || []);
         // Actualizar caché
         parsed.students = data.students;
         sessionStorage.setItem("alumnoData", JSON.stringify(parsed));
+      } else {
+        console.error("Fetch students error:", data.message);
+        if (parsed.students) setAllStudents(parsed.students);
       }
     } catch (err) {
       console.error("Error fetching students:", err);
@@ -851,15 +857,15 @@ function TeacherDashboard({ onLogout }: { onLogout: () => void }) {
                     </div>
                     
                     <div className="space-y-4 border-t border-white/5 pt-6 relative z-10">
-                       {student.classes.filter((c: any) => c.tipo === selectedType).slice(0, 2).map((c: any, cIdx: number) => (
+                       {student.classes.filter((c: any) => selectedType === "Todos" || c.tipo === selectedType).slice(0, 2).map((c: any, cIdx: number) => (
                          <div key={cIdx} className="flex items-center gap-3">
                             <Play className="w-2 h-2 text-brand-accent" />
                             <span className="text-[9px] uppercase tracking-widest font-medium text-white/50 truncate">{c.titulo}</span>
                          </div>
                        ))}
-                       {student.classes.filter((c: any) => c.tipo === selectedType).length > 2 && (
+                       {student.classes.filter((c: any) => selectedType === "Todos" || c.tipo === selectedType).length > 2 && (
                          <p className="text-[8px] uppercase tracking-widest font-bold text-brand-accent/40 italic">
-                            + {student.classes.filter((c: any) => c.tipo === selectedType).length - 2} clases más
+                            + {student.classes.filter((c: any) => selectedType === "Todos" || c.tipo === selectedType).length - 2} clases más
                          </p>
                        )}
                     </div>
@@ -1001,7 +1007,7 @@ const TeacherClassCard: React.FC<TeacherClassCardProps> = ({ clase, studentName,
        <div className="space-y-6">
         <div className="aspect-video bg-black rounded-xl overflow-hidden border border-white/5 relative group shadow-2xl">
           <iframe 
-            src={`https://www.youtube.com/embed/${clase.videoUrl}`}
+            src={`https://www.youtube.com/embed/${getYoutubeId(clase.videoUrl)}`}
             className="absolute inset-0 w-full h-full grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700"
             title={clase.titulo}
             frameBorder="0"
@@ -1219,11 +1225,11 @@ function DashboardView({ user, onLogout }: { user: AlumnoData; onLogout: () => v
               <p className="text-[10px] uppercase tracking-[0.4em] font-black text-white/20">No se han encontrado registros de clases</p>
             </div>
           ) : (
-            user.classes.map((clase, idx) => (
+            user.classes.slice().reverse().map((clase, idx) => (
               <ClassCard 
-                key={idx} 
+                key={user.classes.length - 1 - idx} 
                 clase={clase} 
-                index={idx} 
+                index={user.classes.length - 1 - idx} 
                 userName={user.user} 
               />
             ))
@@ -1290,7 +1296,7 @@ const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName }) => {
       <div className="space-y-6">
         <div className="aspect-video bg-black rounded-xl overflow-hidden border border-white/5 relative group">
           <iframe 
-            src={`https://www.youtube.com/embed/${clase.videoUrl}`}
+            src={`https://www.youtube.com/embed/${getYoutubeId(clase.videoUrl)}`}
             className="absolute inset-0 w-full h-full grayscale-[0.5] group-hover:grayscale-0 transition-all duration-700"
             title={clase.titulo}
             frameBorder="0"
