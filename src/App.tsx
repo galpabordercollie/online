@@ -2,6 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
+/// <reference types="vite/client" />
 
 import React, { useState, useEffect } from "react";
 import { 
@@ -99,11 +100,24 @@ export default function App() {
       <nav className="sticky top-0 z-50 bg-brand-bg/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-12 h-20 flex justify-between items-center">
             <div 
-              className="flex items-center gap-3 cursor-pointer group" 
+              className="flex items-center gap-4 cursor-pointer group" 
               onClick={() => setView("landing")}
             >
-              <div className="w-8 h-8 bg-brand-accent rounded-sm rotate-45 flex items-center justify-center transition-transform group-hover:rotate-[225deg] duration-500">
-                <div className="w-3 h-3 border border-brand-bg rotate-45"></div>
+              <div className="h-12 w-auto flex items-center justify-center">
+                <img 
+                  src={`${import.meta.env.BASE_URL}Logo.gif`}
+                  alt="GALPA Logo" 
+                  className="h-full w-auto object-contain"
+                  onError={(e) => {
+                    // Fallback to the icon if image fails to load
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement?.classList.add('fallback-active');
+                  }}
+                  referrerPolicy="no-referrer"
+                />
+                <div className="hidden [.fallback-active_&]:flex w-8 h-8 bg-brand-accent rounded-sm rotate-45 items-center justify-center transition-transform group-hover:rotate-[225deg] duration-500">
+                  <div className="w-3 h-3 border border-brand-bg rotate-45"></div>
+                </div>
               </div>
               <span className="text-xs tracking-[0.3em] font-bold uppercase transition-colors group-hover:text-brand-accent">GALPA</span>
             </div>
