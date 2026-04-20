@@ -80,7 +80,7 @@ const SERVICES: ServiceInfo[] = [
     description: "Análisis técnico de precisión desde cualquier lugar.",
     longDescription: "Nuestro sistema de formación digital te permite recibir correcciones técnicas en tiempo real. Analizamos tus vídeos, corregimos posiciones y trazamos líneas de trabajo personalizadas sin necesidad de desplazamiento. La tecnología al servicio de la tradición.",
     image: `${import.meta.env.BASE_URL}online.png`,
-    features: ["Video-análisis en directo", "Sesiones personalizadas", "Grabación de la sesión para repaso", "Plan de trabajo mensual"]
+    features: ["Video-análisis en directo", "Sesiones personalizadas", "Grabación de la sesión para repaso", "Plan de trabajo Semanal"]
   },
   {
     id: "seminarios",
@@ -88,7 +88,7 @@ const SERVICES: ServiceInfo[] = [
     description: "Evolución y convivencia técnica, en casa o en ruta.",
     longDescription: "Dos jornadas de trabajo intensivo en nuestras instalaciones o fuera de ellas (Consultar disponibilidad). Enfocadas en la evolución tanto de perros como de guías. Una experiencia de convivencia y aprendizaje técnico de alto impacto.",
     image: `${import.meta.env.BASE_URL}seminarios.png`,
-    features: ["Práctica real con rebaño", "Grupos reducidos", "Evaluación de instinto", "Planteamientos de trabajos futuros."]
+    features: ["Práctica real con rebaño", "Grupos reducidos", "Evaluación de instinto", "Estrategias de desarrollo formativo"]
   },
   {
     id: "webminar",
@@ -96,15 +96,15 @@ const SERVICES: ServiceInfo[] = [
     description: "Conocimiento táctico y teoría aplicada.",
     longDescription: "Sesiones temáticas sobre psicología canina aplicada al pastoreo, gestión de rebaños y tácticas de concurso. La base teórica necesaria para entender el 'por qué' de cada movimiento en el campo.",
     image: "https://picsum.photos/seed/webinar/800/450",
-    features: ["Ponencias de expertos", "Ronda de preguntas y respuestas", "Material de apoyo descargable", "Acceso a la grabación"]
+    features: ["Temarios Especificos", "Material de apoyo descargable", "Acceso a la grabación", "Ronda de preguntas y respuestas"]
   },
   {
     id: "material-exclusivo",
     title: "Acceso a material exclusivo",
     description: "Tu biblioteca técnica de referencia.",
-    longDescription: "Acceso ilimitado a nuestra videoteca premium. Incluye tutoriales paso a paso, análisis de recorridos internacionales y esquemas tácticos que no encontrarás en ningún otro lugar.",
+    longDescription: "Acceso ilimitado a nuestra videoteca premium. Incluye tutoriales paso a paso, análisis de trabajos especificos con esquemas tácticos que te ayudarán a reconocer y solventar todas las situaciones.",
     image: "https://picsum.photos/seed/library/800/450",
-    features: ["Tutoriales HD", "Esquemas de maniobras", "Análisis de competiciones", "Actualizaciones semanales"]
+    features: ["Tutoriales HD", "Esquemas de maniobras", "Análisis de trabajos", "Actualizaciones semanales"]
   },
   {
     id: "intensivo",
@@ -112,7 +112,7 @@ const SERVICES: ServiceInfo[] = [
     description: "La corona del aprendizaje en GALPA.",
     longDescription: "Un programa estructurado para aquellos que buscan la maestría. Cuatro meses de seguimiento riguroso, objetivos por etapas y monitorización constante del progreso del binomio guía-perro.",
     image: "https://picsum.photos/seed/intensive/800/450",
-    features: ["Módulos teóricos y prácticos", "Examen de nivel por etapa", "Certificado de aprovechamiento", "Seguimiento prioritario"]
+    features: ["Módulos teóricos y prácticos", "Modalidad mixta presencial-Online", "Examen de nivel por etapa", "Seguimiento prioritario"]
   }
 ];
 
