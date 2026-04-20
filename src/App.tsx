@@ -343,7 +343,7 @@ export default function App() {
       {/* Footer */}
       <footer className="px-12 py-8 border-t border-brand-border flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] uppercase tracking-[0.3em] font-medium text-brand-ink/30">
         <div className="flex gap-8">
-          <span>GALPA © 2026 <span className="ml-2 font-mono text-brand-ink/40">v0.3.3</span></span>
+          <span>GALPA © 2026 <span className="ml-2 font-mono text-brand-ink/40">v0.3.7</span></span>
           <span className="text-brand-ink/10 hidden md:block">|</span>
           <span>Sheepdog Specialization Campus</span>
         </div>
@@ -606,14 +606,11 @@ function LoginView({ onSuccess, onBack }: { onSuccess: (data: AlumnoData, pass?:
     }
 
     try {
-      const response = await fetch(`${LOGIN_SCRIPT_URL}?action=getAllData&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`, {
-        method: 'GET',
-        mode: 'cors'
-      });
+      const resp = await fetch(`${LOGIN_SCRIPT_URL}?action=getAllData&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
       
-      if (!response.ok) throw new Error("Servidor no disponible");
+      if (!resp.ok) throw new Error("Servidor no disponible");
       
-      const data = await response.json();
+      const data = await resp.json();
 
       if (data.success) {
         onSuccess(data, pass);
@@ -986,21 +983,10 @@ const TeacherClassCard: React.FC<TeacherClassCardProps> = ({ clase, studentName,
     setStatus("saving");
 
     try {
-      const params = new URLSearchParams();
-      params.append('action', 'updateTeacherNotas');
-      params.append('user', String(studentName).trim());
-      params.append('rowId', String(clase.id));
-      params.append('notas', teacherNotas.trim());
-
-      await fetch(DATA_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString()
+      const resp = await fetch(`${DATA_SCRIPT_URL}?action=updateTeacherNotas&user=${encodeURIComponent(studentName.trim())}&rowId=${clase.id}&notas=${encodeURIComponent(teacherNotas.trim())}`, {
+        method: 'POST'
       });
-
+      
       setStatus("success");
       onUpdate();
       setTimeout(() => setStatus("idle"), 3000);
@@ -1104,23 +1090,9 @@ const AddNewClassForm = ({ studentName, onSuccess }: { studentName: string; onSu
       if (vidId.includes("v=")) vidId = vidId.split("v=")[1].split("&")[0];
       if (vidId.includes("youtu.be/")) vidId = vidId.split("youtu.be/")[1].split("?")[0];
 
-      const params = new URLSearchParams();
-      params.append('action', 'addNewClass');
-      params.append('user', studentName);
-      params.append('fecha', formData.fecha);
-      params.append('titulo', formData.titulo);
-      params.append('videoUrl', vidId);
-      params.append('notas', formData.notas);
-      params.append('tipo', formData.tipo);
+      const url = `${DATA_SCRIPT_URL}?action=addNewClass&user=${encodeURIComponent(studentName)}&fecha=${encodeURIComponent(formData.fecha)}&titulo=${encodeURIComponent(formData.titulo)}&videoUrl=${encodeURIComponent(vidId)}&notas=${encodeURIComponent(formData.notas)}&tipo=${encodeURIComponent(formData.tipo)}`;
 
-      await fetch(DATA_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString()
-      });
+      await fetch(url, { method: 'POST' });
 
       setStatus("success");
       setTimeout(() => {
@@ -1264,20 +1236,9 @@ const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName }) => {
     setStatus("saving");
 
     try {
-      const params = new URLSearchParams();
-      params.append('action', 'updateAlumnoNotas');
-      params.append('user', String(userName).trim());
-      params.append('rowId', String(clase.id)); // Usamos el ID de la fila para precisión total
-      params.append('notasAlumno', comment.trim());
-
-      await fetch(DATA_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString()
-      });
+      const url = `${DATA_SCRIPT_URL}?action=updateAlumnoNotas&user=${encodeURIComponent(userName.trim())}&rowId=${clase.id}&notasAlumno=${encodeURIComponent(comment.trim())}`;
+      
+      await fetch(url, { method: 'POST' });
 
       const savedData = sessionStorage.getItem("alumnoData");
       if (savedData) {
