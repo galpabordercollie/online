@@ -18,7 +18,8 @@ import {
   Info,
   Users,
   Award,
-  Video
+  Video,
+  ArrowLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -77,47 +78,47 @@ const CLASS_TYPES = [
 const SERVICES: ServiceInfo[] = [
   {
     id: "clases-online",
-    title: "Online",
-    description: "Análisis técnico de precisión desde cualquier lugar.",
-    longDescription: "Nuestro sistema de formación digital te permite recibir correcciones técnicas en tiempo real. Analizamos tus vídeos, corregimos posiciones y trazamos líneas de trabajo personalizadas sin necesidad de desplazamiento. La tecnología al servicio de la tradición.",
+    title: "Entrenamiento Online",
+    description: "Análisis técnico de precisión para perro pastor desde cualquier lugar.",
+    longDescription: "Nuestro sistema de formación digital para sheepdogs te permite recibir correcciones técnicas en tiempo real. Analizamos vídeos de tu border collie, corregimos posiciones y trazamos líneas de entrenamiento de pastoreo personalizadas.",
     image: `${import.meta.env.BASE_URL}online.png`,
-    features: ["Video-análisis en directo", "Sesiones personalizadas", "Grabación de la sesión para repaso", "Plan de trabajo Semanal"],
+    features: ["Video-análisis de pastoreo", "Sesiones para Border Collie", "Grabación de la sesión", "Plan de entrenamiento semanal"],
     quote: "Ayuda a tu perro para que en el futuro tu perro pueda ayudarte a ti."
   },
   {
     id: "seminarios",
     title: "Seminarios Fin de semana",
-    description: "Evolución y convivencia técnica, en casa o en ruta.",
-    longDescription: "Dos jornadas de trabajo intensivo en nuestras instalaciones o fuera de ellas (Consultar disponibilidad). Enfocadas en la evolución tanto de perros como de guías. Una experiencia de convivencia y aprendizaje técnico de alto impacto.",
+    description: "Evolución técnica con border collies en casa o en ruta.",
+    longDescription: "Dos jornadas de entrenamiento intensivo con ovejas enfocadas en la evolución tanto de perros como de guías. Una experiencia de aprendizaje técnico de alto impacto para cualquier perro de pastoreo.",
     image: `${import.meta.env.BASE_URL}seminarios.png`,
-    features: ["Práctica real con rebaño", "Grupos reducidos", "Evaluación de instinto", "Estrategias de desarrollo formativo"],
+    features: ["Práctica real con perro pastor", "Grupos reducidos", "Evaluación de instinto", "Estrategias de entrenamiento"],
     quote: "La evolución técnica se forja en el campo, entendiendo cada presión y cada silencio."
   },
   {
     id: "webminar",
-    title: "Webminar",
-    description: "Conocimiento táctico y teoría aplicada.",
-    longDescription: "Sesiones temáticas sobre psicología canina aplicada al pastoreo, gestión de rebaños y tácticas de concurso. La base teórica necesaria para entender el 'por qué' de cada movimiento en el campo.",
+    title: "Webinar Técnico",
+    description: "Conocimiento táctico y teoría aplicada al sheepdog training.",
+    longDescription: "Sesiones temáticas sobre psicología canina aplicada al pastoreo de border collies, gestión de rebaños y tácticas de concurso. La base teórica necesaria para el entrenamiento de perro pastor.",
     image: `${import.meta.env.BASE_URL}webinar.png`,
-    features: ["Temarios Especificos", "Material de apoyo descargable", "Acceso a la grabación", "Ronda de preguntas y respuestas"],
+    features: ["Temarios de Pastoreo", "Material de apoyo", "Acceso a grabaciones", "Ronda de preguntas"],
     quote: "La teoría sin práctica es estéril, pero la práctica sin teoría es ciega."
   },
   {
     id: "material-exclusivo",
-    title: "Acceso a material exclusivo",
-    description: "Tu biblioteca técnica de referencia.",
-    longDescription: "Acceso ilimitado a nuestra videoteca premium. Incluye tutoriales paso a paso, análisis de trabajos especificos con esquemas tácticos que te ayudarán a reconocer y solventar todas las situaciones.",
+    title: "Acceso a Material Exclusivo",
+    description: "Recursos técnicos para el entrenamiento de border collie.",
+    longDescription: "Acceso ilimitado a nuestra videoteca premium de sheepdog training. Tutoriales paso a paso de entrenamiento de perro pastor y esquemas tácticos para reconocer y solventar situaciones en el campo.",
     image: `${import.meta.env.BASE_URL}Material exclusivo.png`,
-    features: ["Tutoriales HD", "Esquemas de maniobras", "Análisis de trabajos", "Actualizaciones semanales"],
+    features: ["Tutoriales de Sheepdog", "Esquemas de maniobras", "Análisis de trabajos", "Actualizaciones de training"],
     quote: "La maestría nace de la observación constante y el análisis de cada detalle táctico."
   },
   {
     id: "intensivo",
-    title: "Curso Intensivo cuatrimestral",
-    description: "La corona del aprendizaje en GALPA.",
-    longDescription: "Un programa estructurado para aquellos que buscan la maestría. Cuatro meses de seguimiento riguroso, objetivos por etapas y monitorización constante del progreso del binomio guía-perro.",
+    title: "Curso Intensivo Cuatrimestral",
+    description: "La corona del aprendizaje y entrenamiento en GALPA.",
+    longDescription: "Un programa estructurado para aquellos que buscan la maestría en el pastoreo profesional. Cuatro meses de seguimiento riguroso y entrenamiento intensivo para sheepdogs y sus guías.",
     image: `${import.meta.env.BASE_URL}Curso Cuatrimestral.png`,
-    features: ["Módulos teóricos y prácticos", "Modalidad mixta presencial-Online", "Examen de nivel por etapa", "Seguimiento prioritario"],
+    features: ["Módulos de Sheepdog Training", "Modalidad mixta presencial-Online", "Examen de nivel", "Seguimiento prioritario"],
     quote: "El compromiso con la excelencia requiere tiempo, paciencia y una estructura de trabajo sólida."
   }
 ];
@@ -374,13 +375,13 @@ function LandingView({ onStart, onServiceClick }: { onStart: () => void; onServi
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <p className="text-brand-accent text-xs font-bold uppercase tracking-[0.4em] mb-6">Excelencia en Pastoreo</p>
+            <p className="text-brand-accent text-xs font-bold uppercase tracking-[0.4em] mb-6">Entrenamiento y Pastoreo Profesional</p>
             <h1 className="text-6xl md:text-8xl font-light leading-[1] mb-8 tracking-tighter text-brand-ink">
               Formación de <br/>
               <span className="serif text-brand-accent italic">Alto Rendimiento</span>
             </h1>
             <p className="text-lg text-brand-ink-muted max-w-lg leading-relaxed font-light">
-              Donde la tradición se encuentra con la precisión digital. En GALPA, diseñamos programas exclusivos para binomios que buscan el máximo nivel técnico.
+              Donde la tradición se encuentra con la precisión digital. En GALPA, diseñamos programas de training técnico para perros pastor y sheepdogs que buscan el máximo nivel.
             </p>
           </motion.div>
 
@@ -400,7 +401,7 @@ function LandingView({ onStart, onServiceClick }: { onStart: () => void; onServi
             <div className="w-full aspect-square border border-brand-border rounded-3xl p-1 relative overflow-hidden bg-white group shadow-2xl">
                 <img 
                     src={`${import.meta.env.BASE_URL}Hero.jpg`}
-                    alt="GALPA Hero" 
+                    alt="Entrenamiento de perro pastor Sheepdog y Border Collie en GALPA" 
                     className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500 hover:scale-105"
                     onError={(e) => {
                       e.currentTarget.src = "https://picsum.photos/seed/bordercollie/800/800";
@@ -411,7 +412,7 @@ function LandingView({ onStart, onServiceClick }: { onStart: () => void; onServi
                     <div className="w-8 h-8 bg-brand-accent/10 rounded-full flex items-center justify-center">
                         <Video className="w-3 h-3 text-brand-accent" />
                     </div>
-                    <span className="text-[9px] uppercase tracking-widest font-black text-brand-ink/80">Contenido Exclusivo</span>
+                    <span className="text-[9px] uppercase tracking-widest font-black text-brand-ink/80">Training Técnico Online</span>
                 </div>
             </div>
         </div>
@@ -501,16 +502,20 @@ function ServiceDetailView({ service, onBack }: { service: ServiceInfo; onBack: 
       className="flex-1 flex flex-col relative z-10"
     >
       {/* Hero Section */}
-      <div className="px-12 py-24 border-b border-brand-border bg-brand-accent/[0.03] relative overflow-hidden">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-20 items-center justify-between">
-           <div className="space-y-8 max-w-xl">
-             <button 
-                onClick={onBack}
-                className="flex items-center gap-2 text-[9px] uppercase tracking-[0.3em] font-bold text-brand-ink/40 hover:text-brand-accent transition-colors mb-4"
-              >
-                <X className="w-3 h-3" />
-                Volver a la oferta
-              </button>
+      <div className="px-12 pt-12 pb-24 border-b border-brand-border bg-brand-accent/[0.03] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <button 
+            onClick={onBack}
+            className="flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] font-bold text-brand-ink/80 hover:text-brand-accent transition-colors mb-12 group"
+          >
+            <div className="w-8 h-8 rounded-full border border-brand-ink/10 flex items-center justify-center group-hover:border-brand-accent transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </div>
+            Volver a la oferta
+          </button>
+
+          <div className="flex flex-col md:flex-row gap-20 items-center justify-between">
+            <div className="space-y-8 max-w-xl">
              <h1 className="text-6xl md:text-7xl font-light tracking-tighter leading-none text-brand-ink">{service.title}</h1>
              <p className="text-xl text-brand-ink/60 leading-relaxed font-light">{service.longDescription}</p>
            </div>
@@ -526,6 +531,7 @@ function ServiceDetailView({ service, onBack }: { service: ServiceInfo; onBack: 
            </div>
         </div>
       </div>
+    </div>
 
       {/* Features Grid */}
       <div className="max-w-7xl mx-auto px-12 py-24 w-full grid grid-cols-1 md:grid-cols-2 gap-24">
@@ -576,7 +582,7 @@ function ServiceDetailView({ service, onBack }: { service: ServiceInfo; onBack: 
                </div>
             </div>
          </div>
-      </div>
+       </div>
     </motion.div>
   );
 }
@@ -900,16 +906,20 @@ function TeacherStudentDetail({ student, onBack, onRefresh }: { student: any; on
       className="flex-1 flex flex-col bg-brand-bg relative z-10"
     >
       {/* Header Panel */}
-      <div className="px-12 py-16 border-b border-brand-border bg-brand-accent/[0.03] relative overflow-hidden">
-        <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
-          <div className="space-y-4">
-             <button 
-                onClick={onBack}
-                className="flex items-center gap-2 text-[9px] uppercase tracking-[0.3em] font-bold text-brand-ink/40 hover:text-brand-accent transition-colors mb-4"
-              >
-                <ChevronRight className="w-3 h-3 rotate-180" />
-                Volver al listado
-              </button>
+      <div className="px-12 pt-10 pb-16 border-b border-brand-border bg-brand-accent/[0.03] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto relative z-10">
+          <button 
+            onClick={onBack}
+            className="flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] font-bold text-brand-ink/80 hover:text-brand-accent transition-colors mb-8 group"
+          >
+            <div className="w-8 h-8 rounded-full border border-brand-ink/10 flex items-center justify-center group-hover:border-brand-accent transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </div>
+            Volver al listado
+          </button>
+
+          <div className="flex flex-col md:flex-row justify-between items-center gap-10">
+            <div className="space-y-4">
             <h1 className="text-5xl font-light tracking-tighter leading-none text-brand-ink">
                 Expediente: <span className="serif text-brand-accent">{student.user}</span>
             </h1>
@@ -933,6 +943,7 @@ function TeacherStudentDetail({ student, onBack, onRefresh }: { student: any; on
           </div>
         </div>
       </div>
+    </div>
 
       <div className="flex-1 max-w-7xl mx-auto px-12 py-16 w-full space-y-16">
         {showAddClass && (
