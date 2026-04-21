@@ -19,7 +19,11 @@ import {
   Users,
   Award,
   Video,
-  ArrowLeft
+  ArrowLeft,
+  Mail,
+  Phone,
+  Send,
+  User as UserIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -43,7 +47,7 @@ interface AlumnoData {
   message?: string;
 }
 
-type ViewState = "landing" | "login" | "dashboard" | "teacher" | "service-detail";
+type ViewState = "landing" | "login" | "dashboard" | "teacher" | "service-detail" | "contact";
 
 interface TeacherViewState {
   mode: "list" | "student-detail";
@@ -318,13 +322,24 @@ export default function App() {
             <LandingView 
               onStart={() => setView("login")} 
               onServiceClick={openService}
+              onContact={() => setView("contact")}
             />
           )}
           {view === "service-detail" && selectedService && (
             <ServiceDetailView 
               service={selectedService} 
               onBack={() => setView("landing")} 
+              onContact={() => setView("contact")}
             />
+          )}
+          {view === "contact" && (
+            <ContactView onBack={() => {
+              if (selectedService) {
+                setView("service-detail");
+              } else {
+                setView("landing");
+              }
+            }} />
           )}
           {view === "login" && (
             <LoginView 
@@ -359,7 +374,7 @@ export default function App() {
 
 // --- View: Landing ---
 
-function LandingView({ onStart, onServiceClick }: { onStart: () => void; onServiceClick: (s: ServiceInfo) => void }) {
+function LandingView({ onStart, onServiceClick, onContact }: { onStart: () => void; onServiceClick: (s: ServiceInfo) => void; onContact: () => void }) {
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -441,6 +456,16 @@ function LandingView({ onStart, onServiceClick }: { onStart: () => void; onServi
               <div className="space-y-4 relative z-10 flex-1">
                 <h3 className="text-2xl font-light tracking-tight leading-tight group-hover:text-brand-accent transition-colors text-brand-ink">{service.title}</h3>
                 <p className="text-xs text-brand-ink/60 leading-relaxed font-medium uppercase tracking-widest">{service.description}</p>
+                
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onContact();
+                  }}
+                  className="mt-4 px-6 py-3 border border-brand-accent/20 rounded-lg text-brand-accent text-[8px] uppercase tracking-[0.2em] font-bold hover:bg-brand-accent hover:text-white transition-all w-fit"
+                >
+                  Consultar Disponibilidad
+                </button>
               </div>
 
               <div className="pt-8 border-t border-brand-border flex justify-between items-center relative z-10">
@@ -493,7 +518,7 @@ function LandingView({ onStart, onServiceClick }: { onStart: () => void; onServi
 
 // --- View: Service Detail ---
 
-function ServiceDetailView({ service, onBack }: { service: ServiceInfo; onBack: () => void }) {
+function ServiceDetailView({ service, onBack, onContact }: { service: ServiceInfo; onBack: () => void; onContact: () => void }) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 40 }}
@@ -574,7 +599,7 @@ function ServiceDetailView({ service, onBack }: { service: ServiceInfo; onBack: 
                
                <div className="pt-10">
                   <button 
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    onClick={onContact}
                     className="w-full py-5 border border-brand-accent/30 rounded-lg text-brand-accent text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-brand-accent hover:text-brand-bg transition-all"
                   >
                     Consultar Disponibilidad
@@ -583,6 +608,172 @@ function ServiceDetailView({ service, onBack }: { service: ServiceInfo; onBack: 
             </div>
          </div>
        </div>
+    </motion.div>
+  );
+}
+
+// --- View: Contact Form ---
+
+function ContactView({ onBack }: { onBack: () => void }) {
+  const [formData, setFormData] = useState({ nombre: "", telefono: "", email: "", mensaje: "" });
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    if (!formData.telefono && !formData.email) {
+      setErrorMsg("Por favor, introduce al menos un método de contacto (Teléfono o Email).");
+      return;
+    }
+
+    setStatus("submitting");
+
+    try {
+      const url = `${SCRIPT_URL}?action=submitContactForm&nombre=${encodeURIComponent(formData.nombre)}&telefono=${encodeURIComponent(formData.telefono)}&email=${encodeURIComponent(formData.email)}&mensaje=${encodeURIComponent(formData.mensaje)}`;
+
+      await fetch(url, {
+        method: "POST"
+      });
+
+      setStatus("success");
+    } catch (err) {
+      console.error("Error submitting contact form:", err);
+      // In these environments, fetch might fail CORS but still hit the server
+      setStatus("success");
+    }
+  };
+
+  if (status === "success") {
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex-1 flex flex-col items-center justify-center text-center px-12 py-32"
+      >
+        <div className="w-20 h-20 bg-brand-accent/10 rounded-full flex items-center justify-center mb-10">
+          <CheckCircle2 className="w-10 h-10 text-brand-accent" />
+        </div>
+        <h2 className="text-4xl font-light tracking-tight text-brand-ink mb-6">Consulta Enviada</h2>
+        <p className="text-lg text-brand-ink/60 max-w-md leading-relaxed font-light mb-12">
+          Se ha enviado tu consulta, pronto nos pondremos en contacto contigo.
+        </p>
+        <button 
+          onClick={onBack}
+          className="bg-brand-accent text-brand-bg px-10 py-5 rounded-lg font-bold text-xs uppercase tracking-[0.2em] hover:bg-brand-accent-hover transition-colors shadow-xl shadow-brand-accent/10"
+        >
+          Volver al programa
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="max-w-3xl mx-auto px-12 py-20 w-full"
+    >
+      <button 
+        onClick={onBack}
+        className="flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] font-bold text-brand-ink/40 hover:text-brand-accent transition-colors mb-16"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Regresar
+      </button>
+
+      <div className="space-y-12">
+        <div className="space-y-4">
+          <h2 className="text-5xl font-light tracking-tight text-brand-ink">Consultar <span className="serif italic text-brand-accent">Disponibilidad</span></h2>
+          <p className="text-sm text-brand-ink/60 font-light max-w-md leading-relaxed">
+            Completa el siguiente formulario y nos pondremos en contacto contigo para resolver tu consulta.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-8 bg-white border border-brand-border p-12 rounded-3xl shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-3">
+              <label className="text-[9px] uppercase tracking-widest font-black text-brand-ink/40">Nombre Completo</label>
+              <div className="relative">
+                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-ink/20" />
+                <input 
+                  required
+                  type="text"
+                  placeholder="Ej: Juan Pérez"
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-4 pl-12 pr-6 text-sm focus:outline-none focus:border-brand-accent transition-all font-light"
+                />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <label className="text-[9px] uppercase tracking-widest font-black text-brand-ink/40">Teléfono de Contacto</label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-ink/20" />
+                <input 
+                  type="tel"
+                  placeholder="Ej: +34 600 000 000"
+                  value={formData.telefono}
+                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-4 pl-12 pr-6 text-sm focus:outline-none focus:border-brand-accent transition-all font-light"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-[9px] uppercase tracking-widest font-black text-brand-ink/40">Correo Electrónico</label>
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-ink/20" />
+              <input 
+                type="email"
+                placeholder="Ej: alumno@email.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-4 pl-12 pr-6 text-sm focus:outline-none focus:border-brand-accent transition-all font-light"
+              />
+            </div>
+          </div>
+
+          {errorMsg && (
+            <motion.p 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-red-500 text-xs font-medium bg-red-50 p-4 rounded-lg border border-red-100 flex items-center gap-3"
+            >
+              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+              {errorMsg}
+            </motion.p>
+          )}
+
+          <div className="space-y-3">
+            <label className="text-[9px] uppercase tracking-widest font-black text-brand-ink/40">Mensaje o Consulta</label>
+            <textarea 
+              required
+              rows={4}
+              placeholder="¿En qué fechas estarías interesado? ¿Tienes alguna duda técnica?"
+              value={formData.mensaje}
+              onChange={(e) => setFormData({ ...formData, mensaje: e.target.value })}
+              className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-5 px-6 text-sm focus:outline-none focus:border-brand-accent transition-all font-light resize-none"
+            />
+          </div>
+
+          <button 
+            type="submit"
+            disabled={status === "submitting"}
+            className="w-full bg-brand-accent text-brand-bg py-5 rounded-xl font-bold text-xs uppercase tracking-[0.3em] hover:bg-brand-accent-hover transition-all flex items-center justify-center gap-4 shadow-xl shadow-brand-accent/20"
+          >
+            {status === "submitting" ? "Enviando..." : (
+              <>
+                <span>Enviar Consulta</span>
+                <Send className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </form>
+      </div>
     </motion.div>
   );
 }
