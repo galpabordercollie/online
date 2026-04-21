@@ -467,16 +467,6 @@ function LandingView({ onStart, onServiceClick, onContact }: { onStart: () => vo
               <div className="space-y-4 relative z-10 flex-1">
                 <h3 className="text-2xl font-light tracking-tight leading-tight group-hover:text-brand-accent transition-colors text-brand-ink">{service.title}</h3>
                 <p className="text-xs text-brand-ink/60 leading-relaxed font-medium uppercase tracking-widest">{service.description}</p>
-                
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onContact(service.title);
-                  }}
-                  className="mt-4 px-6 py-3 border border-brand-accent/20 rounded-lg text-brand-accent text-[8px] uppercase tracking-[0.2em] font-bold hover:bg-brand-accent hover:text-white transition-all w-fit"
-                >
-                  Consultar Disponibilidad
-                </button>
               </div>
 
               <div className="pt-8 border-t border-brand-border flex justify-between items-center relative z-10">
