@@ -33,13 +33,13 @@ import { motion, AnimatePresence } from "motion/react";
 // --- Types ---
 
 interface ClassItem {
-  id?: number; // Row index from spreadsheet
+  id?: number;
   fecha: string;
-  titulo: string;
-  videoUrl: string;
-  notas: string;
-  notasAlumno: string;
-  tipo: string;
+  clase: string; // Columna D: Clase
+  video: string; // Columna E: Video
+  notas: string; // Columna F: Notas (Profesor)
+  notasAlumno: string; // Columna G: Notas Alumno
+  tipo: string; // Columna B: Tipo Clase
 }
 
 interface AlumnoData {
@@ -87,6 +87,14 @@ const CLASS_TYPES = [
   "Material Exclusivo",
   "Curso Cuatrimestral"
 ];
+
+const SUB_DATA_MAPPING: Record<string, string> = {
+  "Online": "online",
+  "Seminario": "seminario",
+  "Webminar": "webminar",
+  "Material Exclusivo": "material",
+  "Curso Cuatrimestral": "intensivo"
+};
 
 const SERVICES: ServiceInfo[] = [
   {
@@ -153,11 +161,13 @@ const formatDate = (dateString: string) => {
 
 const getYoutubeId = (url: string) => {
   if (!url) return "";
-  let id = url;
-  if (id.includes("v=")) id = id.split("v=")[1].split("&")[0];
-  if (id.includes("youtu.be/")) id = id.split("youtu.be/")[1].split("?")[0];
-  if (id.includes("embed/")) id = id.split("embed/")[1].split("?")[0];
-  return id;
+  try {
+    const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[1].length === 11) ? match[1] : null;
+  } catch (e) {
+    return "";
+  }
 };
 
 // --- Components ---
@@ -176,7 +186,8 @@ export default function App() {
       try {
         const parsed = JSON.parse(savedData);
         setUser(parsed);
-        const isTeacher = parsed.user?.toUpperCase().includes("GALPA");
+        const username = String(parsed.user || "");
+        const isTeacher = username.toUpperCase().includes("GALPA");
         if (isTeacher) {
           setView("teacher");
         } else {
@@ -193,7 +204,9 @@ export default function App() {
     setUser(sessionData);
     sessionStorage.setItem("alumnoData", JSON.stringify(sessionData));
     if (password) sessionStorage.setItem("temp_p", password);
-    const isTeacher = data.user?.toUpperCase().includes("GALPA");
+    
+    const username = String(data.user || "");
+    const isTeacher = username.toUpperCase().includes("GALPA");
     if (isTeacher) {
       setView("teacher");
     } else {
@@ -205,6 +218,25 @@ export default function App() {
     sessionStorage.removeItem("alumnoData");
     setUser(null);
     setView("landing");
+  };
+
+  const handleRefreshData = async () => {
+    const savedPass = sessionStorage.getItem("temp_p") || user?._auth;
+    if (savedPass && user?.user) {
+      try {
+        const resp = await fetch(`${LOGIN_SCRIPT_URL}?action=getAllData&user=${encodeURIComponent(user.user)}&pass=${encodeURIComponent(savedPass)}`);
+        const data = await resp.json();
+        if (data.success) {
+          const sessionData = { ...data, _auth: savedPass };
+          setUser(sessionData);
+          sessionStorage.setItem("alumnoData", JSON.stringify(sessionData));
+          return true;
+        }
+      } catch (e) {
+        console.error("Refresh error:", e);
+      }
+    }
+    return false;
   };
 
   const openService = (service: ServiceInfo) => {
@@ -375,27 +407,14 @@ export default function App() {
                 setContactSource(source);
                 setView("contact");
               }}
+              onRefresh={handleRefreshData}
             />
           )}
           {view === "teacher" && user && (
             <TeacherDashboard 
               user={user} 
               onLogout={handleLogout}
-              onRefresh={async () => {
-                const savedPass = sessionStorage.getItem("temp_p");
-                if (savedPass && user.user) {
-                  try {
-                    const resp = await fetch(`${LOGIN_SCRIPT_URL}?action=getAllData&user=${encodeURIComponent(user.user)}&pass=${encodeURIComponent(savedPass)}`);
-                    const data = await resp.json();
-                    if (data.success) {
-                      setUser(data);
-                      sessionStorage.setItem("alumnoData", JSON.stringify(data));
-                    }
-                  } catch (e) {
-                    console.error("Refresh error:", e);
-                  }
-                }
-              }}
+              onRefresh={handleRefreshData}
             />
           )}
         </AnimatePresence>
@@ -404,7 +423,7 @@ export default function App() {
       {/* Footer */}
       <footer className="px-12 py-8 border-t border-brand-border flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] uppercase tracking-[0.3em] font-medium text-brand-ink/30">
         <div className="flex gap-8">
-          <span>GALPA © 2026 <span className="ml-2 font-mono text-brand-ink/40">v1.5.3</span></span>
+          <span>GALPA © 2026 <span className="ml-2 font-mono text-brand-ink/40">v1.6.3</span></span>
           <span className="text-brand-ink/10 hidden md:block">|</span>
           <span>Sheepdog Specialization Campus</span>
         </div>
@@ -668,9 +687,7 @@ function ContactView({ source, onBack }: { source: string; onBack: () => void })
     try {
       const url = `${SCRIPT_URL}?action=submitContactForm&nombre=${encodeURIComponent(formData.nombre)}&telefono=${encodeURIComponent(formData.telefono)}&email=${encodeURIComponent(formData.email)}&mensaje=${encodeURIComponent(formData.mensaje)}&fuente=${encodeURIComponent(source)}`;
 
-      await fetch(url, {
-        method: "POST"
-      });
+      await fetch(url);
 
       setStatus("success");
     } catch (err) {
@@ -832,7 +849,7 @@ function InternalMessageModal({ isOpen, onClose, userName }: { isOpen: boolean; 
   const fetchHistory = async () => {
     setStatus("loading");
     try {
-      const url = `${SCRIPT_URL}?action=getInternalMessages&user=${encodeURIComponent(userName)}`;
+      const url = `${SCRIPT_URL}?action=getInternalMessages&alumno=${encodeURIComponent(userName)}`;
       const resp = await fetch(url);
       const data = await resp.json();
       if (data.success) {
@@ -852,12 +869,14 @@ function InternalMessageModal({ isOpen, onClose, userName }: { isOpen: boolean; 
   }, [isOpen]);
 
   const handleSend = async () => {
-    if (!message.trim()) return;
+    const m = String(message || "").trim();
+    if (!m) return;
     setStatus("sending");
 
     try {
-      const url = `${SCRIPT_URL}?action=submitInternalMessage&user=${encodeURIComponent(userName)}&mensaje=${encodeURIComponent(message)}`;
-      await fetch(url, { method: "POST" });
+      // Usamos 'alumno' para coincidir con la hoja de excel "Mensajes" (Fecha, Alumno, Mensaje, Respuesta)
+      const url = `${SCRIPT_URL}?action=submitInternalMessage&alumno=${encodeURIComponent(String(userName || "").trim())}&mensaje=${encodeURIComponent(m)}`;
+      await fetch(url);
       setStatus("success");
       setMessage("");
       // Refresh history after sending
@@ -939,7 +958,7 @@ function InternalMessageModal({ isOpen, onClose, userName }: { isOpen: boolean; 
               />
               <button 
                 onClick={handleSend}
-                disabled={status === "sending" || !message.trim()}
+                disabled={status === "sending" || !String(message || "").trim()}
                 className={`
                   absolute bottom-4 right-4 p-4 rounded-lg transition-all flex items-center justify-center
                   ${status === "success" ? "bg-emerald-500 text-white" : "bg-brand-accent text-brand-bg hover:scale-105 active:scale-95 disabled:opacity-50"}
@@ -974,17 +993,7 @@ function LoginView({ onSuccess, onBack }: { onSuccess: (data: AlumnoData, pass?:
     setLoading(true);
     setError("");
 
-    // Créditos de profesor directos
-    if (user.trim().toUpperCase() === "GALPA" && pass === "@Joker2026") {
-      onSuccess({
-        success: true,
-        user: user.trim(),
-        classes: []
-      }, pass);
-      setLoading(false);
-      return;
-    }
-
+    // Créditos de profesor directos movidos a validación de servidor
     try {
       const resp = await fetch(`${LOGIN_SCRIPT_URL}?action=getAllData&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
       
@@ -1116,8 +1125,8 @@ function TeacherDashboard({ user, onLogout, onRefresh }: { user: AlumnoData; onL
     if (selectedType === "Todos") return matchesSearch;
 
     // Si buscamos por programa, comprobamos si tiene la suscripción activa O si tiene clases de ese tipo
-    const subKey = selectedType.toLowerCase().split(' ')[0];
-    const isSubscribed = student[subKey] === true;
+    const subKey = SUB_DATA_MAPPING[selectedType];
+    const isSubscribed = subKey ? (student as any)[subKey] === true : false;
     const hasTypeClasses = student.classes && student.classes.some((c: any) => {
         const classType = (c.tipo || "").trim().toLowerCase();
         const targetType = selectedType.trim().toLowerCase();
@@ -1135,7 +1144,7 @@ function TeacherDashboard({ user, onLogout, onRefresh }: { user: AlumnoData; onL
 
     setIsUpdating(true);
     try {
-      await fetch(`${LOGIN_SCRIPT_URL}?action=adminCreateStudent&user=${encodeURIComponent(name)}&pass=${encodeURIComponent(pass)}`, { method: "POST" });
+      await fetch(`${LOGIN_SCRIPT_URL}?action=adminCreateStudent&user=${encodeURIComponent(name)}&pass=${encodeURIComponent(pass)}`);
       onRefresh();
     } finally {
       setIsUpdating(false);
@@ -1160,7 +1169,7 @@ function TeacherDashboard({ user, onLogout, onRefresh }: { user: AlumnoData; onL
     });
 
     try {
-      await fetch(`${LOGIN_SCRIPT_URL}?${params.toString()}`, { method: "POST" });
+      await fetch(`${LOGIN_SCRIPT_URL}?${params.toString()}`);
       onRefresh();
     } finally {
       setIsUpdating(false);
@@ -1171,7 +1180,7 @@ function TeacherDashboard({ user, onLogout, onRefresh }: { user: AlumnoData; onL
     if (!confirm(`¿Estás seguro de que quieres borrar a ${student.user}?`)) return;
     setIsUpdating(true);
     try {
-      await fetch(`${LOGIN_SCRIPT_URL}?action=adminDeleteStudent&rowId=${student.rowId}`, { method: "POST" });
+      await fetch(`${LOGIN_SCRIPT_URL}?action=adminDeleteStudent&rowId=${student.rowId}`);
       onRefresh();
     } finally {
       setIsUpdating(false);
@@ -1545,11 +1554,11 @@ function ManageMessages() {
   }, []);
 
   const handleRespond = async () => {
-    if (!respondingTo || !responseText.trim()) return;
+    if (!respondingTo || !String(responseText || "").trim()) return;
     setStatus("saving");
     try {
-      const url = `${SCRIPT_URL}?action=respondInternalMessage&user=${encodeURIComponent(respondingTo.user)}&mensaje=${encodeURIComponent(respondingTo.mensaje)}&respuesta=${encodeURIComponent(responseText)}`;
-      await fetch(url, { method: "POST" });
+      const url = `${SCRIPT_URL}?action=respondInternalMessage&alumno=${encodeURIComponent(String(respondingTo.user || "").trim())}&mensaje=${encodeURIComponent(String(respondingTo.mensaje || "").trim())}&respuesta=${encodeURIComponent(String(responseText || "").trim())}`;
+      await fetch(url);
       setStatus("success");
       setResponseText("");
       setRespondingTo(null);
@@ -1617,7 +1626,7 @@ function ManageMessages() {
                     <div className="flex justify-end">
                       <button 
                         onClick={handleRespond}
-                        disabled={status === "saving" || !responseText.trim() || respondingTo?.user !== msg.user}
+                        disabled={status === "saving" || !String(responseText || "").trim() || respondingTo?.user !== msg.user}
                         className="px-10 py-4 bg-brand-accent text-brand-bg rounded-lg text-[9px] uppercase tracking-[0.2em] font-bold hover:scale-105 transition-all shadow-xl shadow-brand-accent/20"
                       >
                         {status === "saving" && respondingTo?.user === msg.user ? "Enviando..." : "Enviar Respuesta"}
@@ -1674,7 +1683,7 @@ function TeacherStudentDetail({ student, onBack, onRefresh }: { student: any; on
                   <span className="text-[10px] uppercase tracking-[0.2em] font-black text-brand-ink/40 italic mr-4">
                     Modo Edición: Feedback de Instructor Activo
                   </span>
-                  {["online", "seminario", "webinar", "material", "intensivo"].map(sub => (
+                  {["online", "seminario", "webminar", "material", "intensivo"].map(sub => (
                       <span key={sub} className={`text-[8px] uppercase tracking-widest px-2 py-0.5 rounded font-black border ${
                           student[sub] 
                           ? "bg-brand-accent/20 text-brand-accent border-brand-accent/30" 
@@ -1748,13 +1757,12 @@ const TeacherClassCard: React.FC<TeacherClassCardProps> = ({ clase, studentName,
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
 
   const saveFeedback = async () => {
-    if (!teacherNotas.trim()) return;
+    const t = String(teacherNotas || "").trim();
+    if (!t) return;
     setStatus("saving");
 
     try {
-      const resp = await fetch(`${DATA_SCRIPT_URL}?action=updateTeacherNotas&user=${encodeURIComponent(studentName.trim())}&rowId=${clase.id}&notas=${encodeURIComponent(teacherNotas.trim())}`, {
-        method: 'POST'
-      });
+      await fetch(`${DATA_SCRIPT_URL}?action=updateTeacherNotas&alumno=${encodeURIComponent(String(studentName || "").trim())}&rowId=${clase.id}&notas=${encodeURIComponent(t)}`);
       
       setStatus("success");
       onUpdate();
@@ -1772,9 +1780,9 @@ const TeacherClassCard: React.FC<TeacherClassCardProps> = ({ clase, studentName,
        <div className="space-y-6">
         <div className="aspect-video bg-black rounded-xl overflow-hidden border border-brand-border relative group shadow-2xl">
           <iframe 
-            src={`https://www.youtube.com/embed/${getYoutubeId(clase.videoUrl)}`}
+            src={`https://www.youtube.com/embed/${getYoutubeId(clase.video)}`}
             className="absolute inset-0 w-full h-full grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700"
-            title={clase.titulo}
+            title={clase.clase}
             frameBorder="0"
             allowFullScreen
           ></iframe>
@@ -1793,7 +1801,7 @@ const TeacherClassCard: React.FC<TeacherClassCardProps> = ({ clase, studentName,
       <div className="space-y-10 border-l border-brand-accent/10 pl-12 h-full flex flex-col justify-between">
         <div className="space-y-6">
             <h3 className="text-4xl font-light tracking-tight leading-none uppercase text-brand-ink">
-              {clase.titulo}
+              {clase.clase}
             </h3>
             
             <div className="space-y-4">
@@ -1812,15 +1820,15 @@ const TeacherClassCard: React.FC<TeacherClassCardProps> = ({ clase, studentName,
                         w-full py-4 rounded-lg font-bold text-[9px] uppercase tracking-[0.3em] transition-all
                         ${status === "success" ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : 
                         status === "error" ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" :
-                        "bg-brand-accent/20 text-brand-accent border border-brand-accent/30 hover:bg-brand-accent hover:text-brand-bg"}
-                    `}
-                >
-                    {status === "saving" ? "Guardando Feedback..." : 
-                     status === "success" ? "Cambios sincronizados" :
-                     status === "error" ? "Error al guardar" :
-                     "Actualizar Comentario Profesor"}
-                </button>
-            </div>
+                    "bg-brand-accent/20 text-brand-accent border border-brand-accent/30 hover:bg-brand-accent hover:text-brand-bg"}
+                `}
+            >
+                {status === "saving" ? "Guardando Feedback..." : 
+                 status === "success" ? "Cambios sincronizados" :
+                 status === "error" ? "Error al guardar" :
+                 "Actualizar Comentario Profesor"}
+            </button>
+        </div>
         </div>
 
         <div className="space-y-4 pt-6 border-t border-brand-border opacity-60">
@@ -1854,14 +1862,14 @@ const AddNewClassForm = ({ studentName, onSuccess }: { studentName: string; onSu
     
     setStatus("saving");
     try {
-      // Extraemos el ID de YouTube si pegan la URL completa
-      let vidId = formData.videoUrl;
-      if (vidId.includes("v=")) vidId = vidId.split("v=")[1].split("&")[0];
-      if (vidId.includes("youtu.be/")) vidId = vidId.split("youtu.be/")[1].split("?")[0];
+      const vidId = getYoutubeId(formData.videoUrl);
+      if (!vidId) {
+        throw new Error("ID de YouTube no válido");
+      }
 
       const url = `${DATA_SCRIPT_URL}?action=addNewClass&user=${encodeURIComponent(studentName)}&fecha=${encodeURIComponent(formData.fecha)}&titulo=${encodeURIComponent(formData.titulo)}&videoUrl=${encodeURIComponent(vidId)}&notas=${encodeURIComponent(formData.notas)}&tipo=${encodeURIComponent(formData.tipo)}`;
 
-      await fetch(url, { method: 'POST' });
+      await fetch(url);
 
       setStatus("success");
       setTimeout(() => {
@@ -1943,19 +1951,32 @@ const AddNewClassForm = ({ studentName, onSuccess }: { studentName: string; onSu
 
 // --- View: Dashboard ---
 
-function DashboardView({ user, onLogout, onContact }: { user: AlumnoData; onLogout: () => void; onContact: (source: string) => void }) {
+function DashboardView({ user, onLogout, onContact, onRefresh }: { user: AlumnoData; onLogout: () => void; onContact: (source: string) => void; onRefresh: () => Promise<boolean> }) {
   const [activeTab, setActiveTab] = useState<string>("Online");
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isTeacher = user.user.toUpperCase().includes("GALPA");
 
   const targetUser = (isTeacher && selectedStudent) ? selectedStudent : user;
+  
+  // Set default tab effectively
+  useEffect(() => {
+    if (!isTeacher) {
+      if (user.online) setActiveTab("Online");
+      else if (user.seminario) setActiveTab("Seminario");
+      else if (user.webminar) setActiveTab("Webminar");
+      else if (user.material) setActiveTab("Material Exclusivo");
+      else if (user.intensivo) setActiveTab("Curso Cuatrimestral");
+    }
+  }, []);
+
   const tabs = [
     { id: "Online", label: "Online", enabled: isTeacher || targetUser.online === true, userSubscribed: targetUser.online === true },
     { id: "Seminario", label: "Seminario", enabled: isTeacher || targetUser.seminario === true, userSubscribed: targetUser.seminario === true },
-    { id: "Webminar", label: "Webinar", enabled: isTeacher || targetUser.webinar === true, userSubscribed: targetUser.webinar === true },
+    { id: "Webminar", label: "Webinar", enabled: isTeacher || targetUser.webminar === true, userSubscribed: targetUser.webminar === true },
     { id: "Material Exclusivo", label: "Material", enabled: isTeacher || targetUser.material === true, userSubscribed: targetUser.material === true },
     { id: "Curso Cuatrimestral", label: "Intensivo", enabled: isTeacher || targetUser.intensivo === true, userSubscribed: targetUser.intensivo === true },
   ];
@@ -1964,29 +1985,9 @@ function DashboardView({ user, onLogout, onContact }: { user: AlumnoData; onLogo
   const isSubscribed = activeTabData?.enabled;
 
   const handleRefresh = async () => {
-    // If we have stored auth, we can refresh the data
-    const authPass = user._auth || sessionStorage.getItem("temp_p");
-    if (authPass) {
-      try {
-        const resp = await fetch(`${LOGIN_SCRIPT_URL}?action=getAllData&user=${encodeURIComponent(user.user)}&pass=${encodeURIComponent(authPass)}`);
-        const data = await resp.json();
-        if (data.success) {
-          // Update session and state
-          const newData = { ...data, _auth: authPass };
-          sessionStorage.setItem("alumnoData", JSON.stringify(newData));
-          
-          // Re-sync selected student if exists
-          if (selectedStudent && newData.students) {
-            const updatedStudent = newData.students.find((s: any) => s.user === selectedStudent.user);
-            if (updatedStudent) setSelectedStudent(updatedStudent);
-          }
-          
-          window.location.reload(); // Hard refresh to sync all components
-        }
-      } catch (e) {
-        console.error("Refresh error:", e);
-      }
-    }
+    setIsRefreshing(true);
+    await onRefresh();
+    setIsRefreshing(false);
   };
 
   const classesToShow = isTeacher 
@@ -2059,7 +2060,7 @@ function DashboardView({ user, onLogout, onContact }: { user: AlumnoData; onLogo
                   <h2 className="text-[10px] uppercase tracking-[0.3em] font-black text-brand-ink/30 mb-4 px-2 font-sans border-t border-brand-border pt-8">Mis Alumnos</h2>
                   <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2 pb-4">
                     {(user.students || []).map((student: any) => {
-                      const subsCount = [student.online, student.seminario, student.webinar, student.material, student.intensivo].filter(Boolean).length;
+                      const subsCount = [student.online, student.seminario, student.webminar, student.material, student.intensivo].filter(Boolean).length;
                       return (
                         <button
                           key={student.user}
@@ -2150,10 +2151,11 @@ function DashboardView({ user, onLogout, onContact }: { user: AlumnoData; onLogo
                 )}
                 <button 
                   onClick={handleRefresh}
-                  className="p-3 bg-brand-accent/10 rounded-lg text-brand-accent hover:bg-brand-accent hover:text-white transition-all shadow-sm"
+                  disabled={isRefreshing}
+                  className={`p-3 bg-brand-accent/10 rounded-lg text-brand-accent hover:bg-brand-accent hover:text-white transition-all shadow-sm ${isRefreshing ? "opacity-50" : ""}`}
                   title="Actualizar Datos"
                 >
-                  <Calendar className="w-4 h-4" />
+                  <Calendar className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
                 </button>
               </div>
             </div>
@@ -2250,16 +2252,18 @@ interface ClassCardProps {
 }
 
 const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName, isTeacher, onUpdate }) => {
-  const [comment, setComment] = useState(clase.notasAlumno || "");
-  const [teacherNotas, setTeacherNotas] = useState(clase.notas || "");
+  const [comment, setComment] = useState(String(clase.notasAlumno || ""));
+  const [teacherNotas, setTeacherNotas] = useState(String(clase.notas || ""));
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
 
   const saveComment = async () => {
-    if (!comment.trim()) return;
+    const c = String(comment || "").trim();
+    const u = String(userName || "").trim();
+    if (!c) return;
     setStatus("saving");
     try {
-      const url = `${DATA_SCRIPT_URL}?action=updateAlumnoNotas&user=${encodeURIComponent(userName.trim())}&rowId=${clase.id}&notasAlumno=${encodeURIComponent(comment.trim())}`;
-      await fetch(url, { method: 'POST' });
+      const url = `${DATA_SCRIPT_URL}?action=updateAlumnoNotas&alumno=${encodeURIComponent(u)}&rowId=${clase.id}&notasAlumno=${encodeURIComponent(c)}`;
+      await fetch(url);
       setStatus("success");
       if (onUpdate) onUpdate();
       setTimeout(() => setStatus("idle"), 3000);
@@ -2270,11 +2274,13 @@ const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName, isTeacher
   };
 
   const saveTeacherNotas = async () => {
-    if (!teacherNotas.trim()) return;
+    const t = String(teacherNotas || "").trim();
+    const u = String(userName || "").trim();
+    if (!t) return;
     setStatus("saving");
     try {
-      const url = `${DATA_SCRIPT_URL}?action=updateTeacherNotas&user=${encodeURIComponent(userName.trim())}&rowId=${clase.id}&notas=${encodeURIComponent(teacherNotas.trim())}`;
-      await fetch(url, { method: 'POST' });
+      const url = `${DATA_SCRIPT_URL}?action=updateTeacherNotas&alumno=${encodeURIComponent(u)}&rowId=${clase.id}&notas=${encodeURIComponent(t)}`;
+      await fetch(url);
       setStatus("success");
       if (onUpdate) onUpdate();
       setTimeout(() => setStatus("idle"), 3000);
@@ -2293,11 +2299,11 @@ const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName, isTeacher
     >
       {/* Video Side */}
       <div className="space-y-6">
-        <div className="aspect-video bg-black rounded-xl overflow-hidden border border-brand-border relative group shadow-2xl">
+            <div className="aspect-video bg-black rounded-xl overflow-hidden border border-brand-border relative group shadow-2xl">
           <iframe 
-            src={`https://www.youtube.com/embed/${getYoutubeId(clase.videoUrl)}`}
+            src={`https://www.youtube.com/embed/${getYoutubeId(clase.video)}`}
             className="absolute inset-0 w-full h-full grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700"
-            title={clase.titulo}
+            title={clase.clase}
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -2320,7 +2326,7 @@ const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName, isTeacher
       <div className="space-y-8 md:space-y-10 border-l-0 md:border-l border-brand-border md:pl-12 h-full flex flex-col justify-between">
         <div className="space-y-6">
             <h3 className="text-3xl md:text-4xl font-light tracking-tight leading-none uppercase text-brand-ink font-sans">
-              {clase.titulo || 'Clase Magistral'}
+              {clase.clase || 'Clase Magistral'}
             </h3>
             
             <div className="space-y-3">
@@ -2335,7 +2341,7 @@ const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName, isTeacher
                     />
                     <button 
                         onClick={saveTeacherNotas}
-                        disabled={status === "saving" || teacherNotas === clase.notas}
+                        disabled={status === "saving" || String(teacherNotas || "").trim() === String(clase.notas || "").trim()}
                         className="w-full py-3 bg-brand-accent/10 text-brand-accent border border-brand-accent/20 rounded-lg text-[8px] uppercase tracking-widest font-black hover:bg-brand-accent hover:text-white transition-all"
                     >
                       {status === "saving" ? "Guardando..." : "Actualizar Feedback Profesor"}
@@ -2372,7 +2378,7 @@ const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName, isTeacher
             {!isTeacher && (
               <button 
                   onClick={saveComment}
-                  disabled={status === "saving" || !comment.trim() || comment === clase.notasAlumno}
+                  disabled={status === "saving" || !String(comment || "").trim() || String(comment || "").trim() === String(clase.notasAlumno || "").trim()}
                   className={`
                       w-full py-4 rounded-lg font-bold text-[9px] uppercase tracking-[0.3em] transition-all
                       ${status === "success" ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : 
