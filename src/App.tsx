@@ -423,7 +423,7 @@ export default function App() {
       {/* Footer */}
       <footer className="px-12 py-8 border-t border-brand-border flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] uppercase tracking-[0.3em] font-medium text-brand-ink/30">
         <div className="flex gap-8">
-          <span>GALPA © 2026 <span className="ml-2 font-mono text-brand-ink/40">v1.7.0</span></span>
+          <span>GALPA © 2026 <span className="ml-2 font-mono text-brand-ink/40">v2.0.0</span></span>
           <span className="text-brand-ink/10 hidden md:block">|</span>
           <span>Sheepdog Specialization Campus</span>
         </div>
@@ -2326,7 +2326,7 @@ const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName, isTeacher
       <div className="space-y-8 md:space-y-10 border-l-0 md:border-l border-brand-border md:pl-12 h-full flex flex-col justify-between">
         <div className="space-y-6">
             <h3 className="text-3xl md:text-4xl font-light tracking-tight leading-none uppercase text-brand-ink font-sans">
-              {clase.clase || 'Video-Clase Corregida'}
+              {clase.clase || 'CONTENIDO SIN NOMBRE'}
             </h3>
             
             <div className="space-y-3">
