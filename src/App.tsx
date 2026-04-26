@@ -423,7 +423,7 @@ export default function App() {
       {/* Footer */}
       <footer className="px-12 py-8 border-t border-brand-border flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] uppercase tracking-[0.3em] font-medium text-brand-ink/30">
         <div className="flex gap-8">
-          <span>GALPA © 2026 <span className="ml-2 font-mono text-brand-ink/40">v2.0.0</span></span>
+          <span>GALPA © 2026 <span className="ml-2 font-mono text-brand-ink/40">v2.2.0</span></span>
           <span className="text-brand-ink/10 hidden md:block">|</span>
           <span>Sheepdog Specialization Campus</span>
         </div>
@@ -1762,11 +1762,16 @@ const TeacherClassCard: React.FC<TeacherClassCardProps> = ({ clase, studentName,
     setStatus("saving");
 
     try {
-      await fetch(`${DATA_SCRIPT_URL}?action=updateTeacherNotas&alumno=${encodeURIComponent(String(studentName || "").trim())}&videoUrl=${encodeURIComponent(clase.video)}&notas=${encodeURIComponent(t)}`);
+      const resp = await fetch(`${DATA_SCRIPT_URL}?action=updateTeacherNotas&alumno=${encodeURIComponent(String(studentName || "").trim())}&videoUrl=${encodeURIComponent(clase.video)}&notas=${encodeURIComponent(t)}`);
+      const res = await resp.json();
       
-      setStatus("success");
-      onUpdate();
-      setTimeout(() => setStatus("idle"), 3000);
+      if (res.success) {
+        setStatus("success");
+        onUpdate();
+        setTimeout(() => setStatus("idle"), 3000);
+      } else {
+        throw new Error();
+      }
     } catch (err) {
       console.error("Save error:", err);
       setStatus("error");
@@ -1862,20 +1867,24 @@ const AddNewClassForm = ({ studentName, onSuccess }: { studentName: string; onSu
     
     setStatus("saving");
     try {
-      const vidId = getYoutubeId(formData.videoUrl);
-      if (!vidId) {
-        throw new Error("ID de YouTube no válido");
+      // Formatear fecha de AAAA-MM-DD a DD/MM/AAAA
+      const [year, month, day] = formData.fecha.split("-");
+      const formattedDate = `${day}/${month}/${year}`;
+
+      const url = `${DATA_SCRIPT_URL}?action=addNewClass&user=${encodeURIComponent(studentName)}&fecha=${encodeURIComponent(formattedDate)}&titulo=${encodeURIComponent(formData.titulo)}&videoUrl=${encodeURIComponent(formData.videoUrl)}&notas=${encodeURIComponent(formData.notas)}&tipo=${encodeURIComponent(formData.tipo)}`;
+
+      const response = await fetch(url);
+      const result = await response.json();
+
+      if (result.success) {
+        setStatus("success");
+        setTimeout(() => {
+          onSuccess();
+          setStatus("idle");
+        }, 1500);
+      } else {
+        throw new Error(result.message || "Error al guardar en Excel");
       }
-
-      const url = `${DATA_SCRIPT_URL}?action=addNewClass&user=${encodeURIComponent(studentName)}&fecha=${encodeURIComponent(formData.fecha)}&titulo=${encodeURIComponent(formData.titulo)}&videoUrl=${encodeURIComponent(vidId)}&notas=${encodeURIComponent(formData.notas)}&tipo=${encodeURIComponent(formData.tipo)}`;
-
-      await fetch(url);
-
-      setStatus("success");
-      setTimeout(() => {
-        onSuccess();
-        setStatus("idle");
-      }, 1500);
     } catch (err) {
       console.error("Add class error:", err);
       setStatus("error");
@@ -2263,10 +2272,16 @@ const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName, isTeacher
     setStatus("saving");
     try {
       const url = `${DATA_SCRIPT_URL}?action=updateAlumnoNotas&alumno=${encodeURIComponent(u)}&videoUrl=${encodeURIComponent(clase.video)}&notasAlumno=${encodeURIComponent(c)}`;
-      await fetch(url);
-      setStatus("success");
-      if (onUpdate) onUpdate();
-      setTimeout(() => setStatus("idle"), 3000);
+      const resp = await fetch(url);
+      const res = await resp.json();
+
+      if (res.success) {
+        setStatus("success");
+        if (onUpdate) onUpdate();
+        setTimeout(() => setStatus("idle"), 3000);
+      } else {
+        throw new Error();
+      }
     } catch (err) {
       setStatus("error");
       setTimeout(() => setStatus("idle"), 3000);
@@ -2280,10 +2295,16 @@ const ClassCard: React.FC<ClassCardProps> = ({ clase, index, userName, isTeacher
     setStatus("saving");
     try {
       const url = `${DATA_SCRIPT_URL}?action=updateTeacherNotas&alumno=${encodeURIComponent(u)}&videoUrl=${encodeURIComponent(clase.video)}&notas=${encodeURIComponent(t)}`;
-      await fetch(url);
-      setStatus("success");
-      if (onUpdate) onUpdate();
-      setTimeout(() => setStatus("idle"), 3000);
+      const resp = await fetch(url);
+      const res = await resp.json();
+
+      if (res.success) {
+        setStatus("success");
+        if (onUpdate) onUpdate();
+        setTimeout(() => setStatus("idle"), 3000);
+      } else {
+        throw new Error();
+      }
     } catch (err) {
       setStatus("error");
       setTimeout(() => setStatus("idle"), 3000);
